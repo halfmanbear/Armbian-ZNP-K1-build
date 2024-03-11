@@ -1,0 +1,57 @@
+name: Armbian Compile and Release
+on:
+  push:
+    tags:
+      - "*"
+
+env:
+  RELEASE_BRANCH: "edge"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: "Build Armbian"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile
+        run: |
+          ./compile.sh \
+            BOARD=znp-k1 \
+            BRANCH=${{ env.RELEASE_BRANCH }} \
+            RELEASE=bookworm \
+            BSPFREEZE=yes \
+            BUILD_MINIMAL=no \
+            BUILD_DESKTOP=no \
+            KERNEL_CONFIGURE=no \
+            EXTRAWIFI=yes \
+            INSTALL_HEADERS=yes \
+            VENDOR=OpenNept4une \
+            COMPRESS_OUTPUTIMAGE=xz
+
+      - name: Get image filename
+        id: get-filename
+        run: echo "filename=$(basename $(ls output/images/*.img.xz) .img.xz)" >> $GITHUB_OUTPUT
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          prerelease: true
+          allowUpdates: true
+          name: ${{ github.ref_name }}-${{ steps.get-filename.outputs.filename }}
+          artifacts: output/images/${{ steps.get-filename.outputs.filename }}.img.xz, output/images/${{ steps.get-filename.outputs.filename }}.img.txt
+          body: |
+            This is a release version of the base image, compiled by GitHub Actions.
+            Configured to boot on v1.0 boards only.
+
+            Mind that this image is empty and should be used as a base for further customization.
+
+            For more details, please see the logs [here](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
