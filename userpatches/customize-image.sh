@@ -20,17 +20,8 @@ cp /tmp/overlay/boot/dtb/rockchip/*.dtb $SDCARD/boot/dtb/rockchip/
 # Copy SPI & GPIO group permission rules files to the rules.d folder
 cp /tmp/overlay/etc/udev/rules.d/*.rules $SDCARD/etc/udev/rules.d/
 
-FLAG_FILE="/boot/.OpenNept4une.txt"
-
-# Ensure the flag file exists and update its timestamp
-sudo touch "$FLAG_FILE"
-
-# Get system information including the current date and the specific string
-BUILD_INFO="$(date +"%Y-%m-%d") - OpenNept4une-v0.1.6-ZNP-K1"
-
-# Enter info into flag file
-echo "$BUILD_INFO" | sudo tee -a "$FLAG_FILE" > /dev/null
-
+# Copy flag file
+cp /tmp/overlay/boot/.OpenNept4une.txt
 
 # Update package list and install packages
 apt-get update
@@ -83,8 +74,6 @@ apt-get install -y \
 sudo groupadd gpio || true
 sudo groupadd spiusers || true
 
-sudo sh -c 'echo "$(date)" > /boot/.OpenNept4une.txt'
-
 # Add cron job to run sync command every 10 minutes as printers are typically powercut instead of shut down.
 CRON_ENTRY="*/10 * * * * /bin/sync"
 (crontab -l 2>/dev/null | grep -qF "$CRON_ENTRY") || (crontab -l 2>/dev/null; echo "$CRON_ENTRY") | crontab -
@@ -98,4 +87,3 @@ else
     echo "$LINE_TO_ADD" | sudo tee -a "$FILE_PATH" > /dev/null
     echo "Added '$LINE_TO_ADD' to $FILE_PATH."
 fi
-
